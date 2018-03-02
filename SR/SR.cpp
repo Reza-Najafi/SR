@@ -17,14 +17,17 @@ int main(int argc, char** argv)
     else {
         input_file = argv[1];
     }
-    YUV_frame* frames = nullptr;
-    int frameCount = 0;
+    int frameCount = 10;
+    YUV_frame* frames = new YUV_frame[frameCount];
+    
     int res = yuv4mpeg2mov(input_file, frames, frameCount);
     cout <<"Number of frames read from the file: " << frameCount << endl;
     int temp;
-    makeCheckImage();
+    imageWidth = frames[0].width;
+    frames[0].convert2rgb();
+    imageData = frames[0].rgb;
+    imageHeight = frames[0].height;
     init();
-    display();
-    cin >> temp;
+    draw(argc,argv);
     return 0;
 }

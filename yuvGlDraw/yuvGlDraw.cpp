@@ -4,38 +4,34 @@
 #include "stdafx.h"
 #include <GL/glut.h> 
 
-#define checkImageWidth 64
-#define checkImageHeight 64
-GLubyte checkImage[checkImageHeight][checkImageWidth][3];
-
-void makeCheckImage(void)
-{
-    int i, j, c;
-
-    for (i = 0; i < checkImageHeight; i++) {
-        for (j = 0; j < checkImageWidth; j++) {
-            c = ((((i & 0x8) == 0) ^ ((j & 0x8)) == 0)) * 255;
-            checkImage[i][j][0] = (GLubyte)c;
-            checkImage[i][j][1] = (GLubyte)c;
-            checkImage[i][j][2] = (GLubyte)c;
-        }
-    }
-}
-
-void init(void)
+int imageWidth;
+int imageHeight;
+unsigned char*** imageData;
+void init()
 {
     glClearColor(0.0, 0.0, 0.0, 0.0);
     glShadeModel(GL_FLAT);
-    makeCheckImage();
+    //makeCheckImage();
     glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+
 }
 void display(void)
 {
     glClear(GL_COLOR_BUFFER_BIT);
     glRasterPos2i(0, 0);
-    glDrawPixels(checkImageWidth, checkImageHeight, GL_RGB,
-        GL_UNSIGNED_BYTE, checkImage);
+    glDrawPixels(imageWidth, imageHeight, GL_RGB,
+        GL_UNSIGNED_BYTE, imageData);
     glFlush();
+}
+
+void draw(int argc, char** argv) {
+    glutInit(&argc, argv);                 // Initialize GLUT
+    glutCreateWindow("OpenGL Setup Test"); // Create a window with the given title
+    glutInitWindowSize(imageWidth +40, imageHeight +40);   // Set the window's initial width & height
+    glutInitWindowPosition(10, 10); // Position the window's initial top-left corner
+    glutDisplayFunc(display); // Register display callback handler for window re-paint
+    glutMainLoop();           // Enter the infinitely event-processing loop
+    return ;
 }
 
 

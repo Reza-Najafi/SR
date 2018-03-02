@@ -11,35 +11,56 @@ public:
     {
         init(width, height);
     }
-    void init(int width, int height) {
+    void init(int width_, int height_) {
+        width = width_;
+        height = height_;
         if (initialized) { return; }
-        y = new unsigned char*[height];
-        u = new unsigned char*[height];
-        v = new unsigned char*[height];
-        for (int i = 0; i < height; i++) {
-            y[i] = new unsigned char[width];
-            u[i] = new unsigned char[width];
-            v[i] = new unsigned char[width];
+        yuv = new unsigned char**[height_];
+        rgb = new unsigned char**[height_];
+        for (int i = 0; i < height_; i++) {
+            yuv[i] = new unsigned char*[width_];
+            rgb[i] = new unsigned char*[width_];
+            for (int j = 0; j < width_; j++) {
+                yuv[i][j] = new unsigned char[NUM_CHNLS];
+                rgb[i][j] = new unsigned char[NUM_CHNLS];
+            }
         }
         initialized = true;
     }
+
+    void convert2rgb() {
+        for (int i = 0; i < height; i++) {
+            for (int j = 0; j < width; j++) {
+                
+                rgb[i][j][2] = 1.164*((int)yuv[i][j][0] - 16) + 2.018*((int)yuv[i][j][1] - 128);
+
+                rgb[i][j][1] = 1.164*((int)yuv[i][j][0] - 16) - 0.813*((int)yuv[i][j][2] - 128) - 0.391*((int)yuv[i][j][1] - 128);
+
+                rgb[i][j][0] = 1.164*((int)yuv[i][j][0] - 16) + 1.596*((int)yuv[i][j][2] - 128);
+            }
+        }
+
+
+    }
     void clear() {
         for (int i = 0; i < height; i++) {
-            if (y)delete[] y[i];
-            if (u)delete[] u[i];
-            if (v)delete[] v[i];
+            for (int j = 0; j < width; j++) {
+                if (yuv[i][j]) delete[] yuv[i][j];
+                if (rgb[i][j]) delete[] rgb[i][j];
+            }
+            if (yuv[i]) delete[] yuv[i];
+            if (rgb[i]) delete[] rgb[i];
         }
-        delete[] y;
-        delete[] u;
-        delete[] v;
+        if (yuv) delete[] yuv;
+        if (rgb) delete[] rgb;
         initialized = false;
     }
     ~YUV_frame() {
         clear();
     }
-    unsigned char** y = nullptr;
-    unsigned char** u = nullptr;
-    unsigned char** v = nullptr;
+    unsigned char*** yuv = nullptr;
+    unsigned char*** rgb = nullptr;
+    const static int NUM_CHNLS = 3;
     int width = 0;
     int height = 0;
     bool initialized = false;

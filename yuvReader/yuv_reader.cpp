@@ -62,17 +62,31 @@ int readyuvframe(YUV_frame& yuv, char* cdata, int width, int height, float uvwF,
 	yuv.init(width, height);
 	int off = 0;
 	for (int i = 0; i < height; i++) {
-		memcpy(yuv.y[i], data + off, width);
-		off += width;
+        for (int j = 0; j < width; j++) {
+            yuv.yuv[i][j][0] = data[off];
+            off++;
+        }
 	}
 		
-#if 0
+#if 1 // only works for 420 currently
 	for (int i = 0; i < height*uvhF; i++) {
 		for (int j = 0; j < width*uvwF; j++) {
-			yuv.u[i][j] = data[off];
+            yuv.yuv[2 * i][2 * j][1] = data[off];
+            yuv.yuv[2 * i + 1][2 * j][1] = data[off];
+            yuv.yuv[2 * i][2 * j + 1][1] = data[off];
+            yuv.yuv[2 * i + 1][2 * j + 1][1] = data[off];
 			off++;
 		}
 	}
+    for (int i = 0; i < height*uvhF; i++) {
+        for (int j = 0; j < width*uvwF; j++) {
+            yuv.yuv[2 * i][2 * j][2] = data[off];
+            yuv.yuv[2 * i + 1][2 * j][2] = data[off];
+            yuv.yuv[2 * i][2 * j + 1][2] = data[off];
+            yuv.yuv[2 * i + 1][2 * j + 1][2] = data[off];
+            off++;
+        }
+    }
 #endif	
 	return 0;
 }
@@ -118,15 +132,16 @@ int yuv4mpeg2mov( string file, YUV_frame*& frames, int& frameCount) {
 	if (!fs.good()) { 
 		return -1; 
 	}
-	frameCount = remaining/ fLength;
-	if (frameCount <= 0) {
+	int maxFrameCount = remaining/ fLength;
+	if (maxFrameCount <= 0 || frameCount > maxFrameCount) {
 		return -1;
 	}
     
-	frames = new YUV_frame[frameCount];
+	
 	char* buff =  new char[fLength];
 	int currFrame = 0;
-	while (fs.read(buff, fLength) && (fs.rdstate() == 0)) {
+	while (fs.read(buff, fLength) && (fs.rdstate() == 0) && currFrame< frameCount) {
+        frames[currFrame].init(hdr.width, hdr.height);
 		readyuvframe(frames[currFrame], buff, hdr.width, hdr.height, uvwFactor,uvhFactor);
 		currFrame++;
 	} 

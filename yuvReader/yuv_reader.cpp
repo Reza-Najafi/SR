@@ -1,72 +1,9 @@
-// mscthesis.cpp : Defines the entry point for the console application.
-//
-
 #include "stdafx.h"
 #include <fstream>
-#include <string>
 #include <iostream>
 #include <sstream>
+#include <yuv_reader.h>
 using namespace std;
-class YUV_frame {
-public:
-	YUV_frame() {}
-	YUV_frame(int width_, int height_) :
-		width(width_),
-		height(height_)
-	{
-		init(width, height);
-	}
-	void init(int width, int height) {
-		if (initialized) { return; }
-		y = new unsigned char*[height];
-		u = new unsigned char*[height];
-		v = new unsigned char*[height];
-		for (int i = 0; i < height; i++) {
-			y[i] = new unsigned char[width];
-			u[i] = new unsigned char[width];
-			v[i] = new unsigned char[width];
-		}
-		initialized = true;
-	}
-	void clear() {
-		for (int i = 0; i < height; i++) {
-			if (y)delete[] y[i];
-			if (u)delete[] u[i];
-			if (v)delete[] v[i];
-		}
-		delete[] y;
-		delete[] u;
-		delete[] v;
-		initialized = false;
-	}
-	~YUV_frame() {
-		clear();
-	}
-	unsigned char** y = nullptr;
-	unsigned char** u = nullptr;
-	unsigned char** v = nullptr;
-	int width = 0;
-	int height = 0;
-	bool initialized = false;
-
-};
-
-struct YUV_Header {
-	bool valid;
-	int width;
-	int height;
-	int frame_rate_num;
-	int frame_rate_denom;
-	char interlaced;
-	int aspect_num;
-	int aspect_denom;
-	string color_space;
-	void print() {
-		cout << "Width " << width << " Height " << height << " framerate " << (float)frame_rate_num / (float)frame_rate_denom ;
-		cout << " interlaced " << interlaced << " aspect ratio " << (float)aspect_num / (float)aspect_denom;
-		cout << " color space " << color_space <<endl;
-	}
-};
 
 YUV_Header readYuv4MpegHeader( string& input)
 {
@@ -140,8 +77,8 @@ int readyuvframe(YUV_frame& yuv, char* cdata, int width, int height, float uvwF,
 	return 0;
 }
 
-int yuv4mpeg2mov( string file) { 
-	ifstream fs(file.c_str(), std::fstream::in); 
+int yuv4mpeg2mov( string file, YUV_frame*& frames, int& frameCount) {
+	ifstream fs(file.c_str(), std::fstream::binary); 
 
 	if (!fs.good()) {
 		return -1;
@@ -173,49 +110,27 @@ int yuv4mpeg2mov( string file) {
 	if (str.compare("FRAME") != 0) {
 		return -1;
 	}
-	int curr_pos = fs.gcount();
+    
+	int curr_pos = fs.tellg();
 	fs.seekg(0, fs.end);
 	int remaining = (int)fs.tellg() - curr_pos;
 	fs.seekg(curr_pos);
 	if (!fs.good()) { 
 		return -1; 
 	}
-	int frameCount = remaining/ fLength;
+	frameCount = remaining/ fLength;
 	if (frameCount <= 0) {
 		return -1;
 	}
-	YUV_frame* frames = new YUV_frame[frameCount];
+    
+	frames = new YUV_frame[frameCount];
 	char* buff =  new char[fLength];
 	int currFrame = 0;
-	fs.get(buff, fLength);
-	while (fs.good()) {
+	while (fs.read(buff, fLength) && (fs.rdstate() == 0)) {
 		readyuvframe(frames[currFrame], buff, hdr.width, hdr.height, uvwFactor,uvhFactor);
 		currFrame++;
-		fs.get(buff, fLength);
 	} 
 	delete[] buff;
 	return 0;
-}
-
-
-
-
-
-
-
-int main(int argc, char** argv)
-{
-	string input_file;
-	if (argc < 2) {
-		cin >> input_file;
-	}
-	else {
-		input_file = argv[1];
-	}
-
-	yuv4mpeg2mov(input_file);
-	int temp;
-	cin >> temp;
-    return 0;
 }
 
